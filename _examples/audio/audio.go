@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -15,7 +17,6 @@ import (
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/gateway"
 	"github.com/disgoorg/disgoplayer"
-	"github.com/disgoorg/disgoplayer/audio/mp3"
 	"github.com/disgoorg/log"
 	"github.com/disgoorg/snowflake/v2"
 )
@@ -26,15 +27,29 @@ var (
 	channelID = snowflake.GetEnv("disgo_channel_id")
 )
 
+var player disgoplayer.Player
+
 func main() {
 	log.SetLevel(log.LevelInfo)
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	log.Info("starting up")
 
 	client, err := disgo.New(token,
-		bot.WithGatewayConfigOpts(gateway.WithGatewayIntents(discord.GatewayIntentGuildVoiceStates)),
+		bot.WithGatewayConfigOpts(gateway.WithGatewayIntents(discord.GatewayIntentMessageContent|discord.GatewayIntentGuildMessages|discord.GatewayIntentGuildVoiceStates)),
 		bot.WithEventListenerFunc(func(e *events.Ready) {
 			go play(e.Client())
+		}),
+		bot.WithEventListenerFunc(func(e *events.GuildMessageCreate) {
+			args := strings.Split(e.Message.Content, " ")
+			switch args[0] {
+			case "pause":
+				player.SetPaused(true)
+			case "resume":
+				player.SetPaused(false)
+			case "volume":
+				volume, _ := strconv.ParseFloat(args[1], 64)
+				player.SetVolume(float32(volume))
+			}
 		}),
 	)
 	if err != nil {
@@ -49,7 +64,7 @@ func main() {
 
 	log.Info("ExampleBot is now running. Press CTRL-C to exit.")
 	s := make(chan os.Signal, 1)
-	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM)
 	<-s
 }
 
@@ -65,24 +80,22 @@ func play(client bot.Client) {
 		panic("error waiting for connection: " + err.Error())
 	}
 
-	rs, err := http.Get("https://p.scdn.co/mp3-preview/ee121ca281c629bb4e99c33d877fe98fbb752289?cid=774b29d4f13844c495f206cafdad9c86")
+	rs, err := http.Get("https://p.scdn.co/mp3-preview/029f4fba66c0b2cfddfe53fc14b95fa2982e423a")
 	if err != nil {
 		panic("error getting audio: " + err.Error())
 	}
 
-	provider, writer, err := mp3.NewMP3PCMFrameProvider(nil)
+	mp3Provider, writer, err := disgoplayer.NewMP3PCMFrameProvider(nil)
 	if err != nil {
 		panic("error creating audio provider: " + err.Error())
 	}
 
-	opusProvider, err := disgoplayer.NewPCMOpusProvider(nil, provider)
+	player, err = disgoplayer.NewPlayer(mp3Provider)
 	if err != nil {
-		panic("error creating opus provider: " + err.Error())
+		panic("error creating player: " + err.Error())
 	}
 
-	connection.SetOpusFrameProvider(opusProvider)
-
-	println("voice: ready")
+	connection.SetOpusFrameProvider(player)
 
 	defer rs.Body.Close()
 	if _, err = io.Copy(writer, rs.Body); err != nil {
