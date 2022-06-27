@@ -1,6 +1,7 @@
 package disgoplayer
 
 import (
+	"io"
 	"sync"
 
 	"github.com/disgoorg/disgo/voice"
@@ -15,19 +16,23 @@ type Player interface {
 	SetPaused(paused bool)
 }
 
-func NewPlayer(provider PCMFrameProvider) (Player, error) {
+func NewPlayer(providerFunc func() PCMFrameProvider, listeners ...Listener) (Player, error) {
 	player := &defaultPlayer{
-		provider: provider,
-		volume:   1,
-		paused:   false,
+		listeners: listeners,
+		volume:    1,
+		paused:    false,
 	}
 
-	player.volumePCMProvider = NewPCMVolumeFrameProvider(provider, func() float32 {
+	pauseableProvider := NewPauseablePCMFrameProvider(NewVariablePCMFrameProvider(providerFunc), func() bool {
+		return player.paused
+	})
+
+	volumeProvider := NewPCMVolumeFrameProvider(pauseableProvider, func() float32 {
 		return player.volume
 	})
 
 	var err error
-	if player.opusFrameProvider, err = NewPCMOpusProvider(nil, player); err != nil {
+	if player.opusFrameProvider, err = NewPCMOpusProvider(nil, volumeProvider); err != nil {
 		return nil, err
 	}
 
@@ -35,12 +40,13 @@ func NewPlayer(provider PCMFrameProvider) (Player, error) {
 }
 
 type defaultPlayer struct {
-	provider          PCMFrameProvider
-	volumePCMProvider PCMFrameProvider
 	opusFrameProvider voice.OpusFrameProvider
 	volume            float32
 	paused            bool
+	playing           bool
 	mu                sync.Mutex
+
+	listeners []Listener
 }
 
 func (p *defaultPlayer) Volume() float32 {
@@ -63,27 +69,62 @@ func (p *defaultPlayer) Paused() bool {
 
 func (p *defaultPlayer) SetPaused(paused bool) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
+	if p.paused == paused {
+		p.mu.Unlock()
+		return
+	}
 	p.paused = paused
-}
-
-func (p *defaultPlayer) ProvidePCMFrame() ([]int16, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.paused {
-		return nil, nil
+	p.mu.Unlock()
+	if paused {
+		p.emit(func(l Listener) {
+			l.OnPause(p)
+		})
+	} else {
+		p.emit(func(l Listener) {
+			l.OnResume(p)
+		})
 	}
-
-	if p.volume != 1 {
-		return p.volumePCMProvider.ProvidePCMFrame()
-	}
-	return p.provider.ProvidePCMFrame()
 }
 
 func (p *defaultPlayer) ProvideOpusFrame() ([]byte, error) {
-	return p.opusFrameProvider.ProvideOpusFrame()
+	frame, err := p.opusFrameProvider.ProvideOpusFrame()
+	if err == io.EOF {
+		p.playing = false
+		p.emit(func(l Listener) {
+			l.OnEnd(p)
+		})
+	} else if err != nil {
+		p.emit(func(l Listener) {
+			l.OnError(p, err)
+		})
+	}
+	if frame != nil && !p.playing {
+		p.playing = true
+		p.emit(func(l Listener) {
+			l.OnStart(p)
+		})
+	}
+	return frame, err
 }
 
 func (p *defaultPlayer) Close() {
-	p.provider.Close()
+	p.opusFrameProvider.Close()
+	p.emit(func(l Listener) {
+		l.OnClose(p)
+	})
+}
+
+func (p *defaultPlayer) emit(l func(l Listener)) {
+	for _, listener := range p.listeners {
+		l(listener)
+	}
+}
+
+type Listener interface {
+	OnPause(player Player)
+	OnResume(player Player)
+	OnStart(player Player)
+	OnEnd(player Player)
+	OnError(player Player, err error)
+	OnClose(player Player)
 }

@@ -4,25 +4,25 @@ import (
 	"github.com/disgoorg/disgo/voice"
 )
 
-func NewPauseableOpusFrameProvider(opusProvider voice.OpusFrameProvider, pauseProvider func() bool) voice.OpusFrameProvider {
+func NewPauseableOpusFrameProvider(provider voice.OpusFrameProvider, pausedFunc func() bool) voice.OpusFrameProvider {
 	return &pauseableOpusFrameProvider{
-		opusProvider:  opusProvider,
-		pauseProvider: pauseProvider,
+		provider:   provider,
+		pausedFunc: pausedFunc,
 	}
 }
 
 type pauseableOpusFrameProvider struct {
-	opusProvider  voice.OpusFrameProvider
-	pauseProvider func() bool
+	provider   voice.OpusFrameProvider
+	pausedFunc func() bool
 }
 
 func (p *pauseableOpusFrameProvider) ProvideOpusFrame() ([]byte, error) {
-	if p.pauseProvider() {
+	if p.pausedFunc() {
 		return nil, nil
 	}
-	return p.opusProvider.ProvideOpusFrame()
+	return p.provider.ProvideOpusFrame()
 }
 
 func (p *pauseableOpusFrameProvider) Close() {
-	p.opusProvider.Close()
+	p.provider.Close()
 }

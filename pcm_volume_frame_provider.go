@@ -12,35 +12,35 @@ type pcmVolumeFrameProvider struct {
 	volumeProvider   func() float32
 }
 
-func (P *pcmVolumeFrameProvider) ProvidePCMFrame() ([]int16, error) {
-	frame, err := P.pcmFrameProvider.ProvidePCMFrame()
+func (p *pcmVolumeFrameProvider) ProvidePCMFrame() ([]int16, error) {
+	frame, err := p.pcmFrameProvider.ProvidePCMFrame()
 	if err != nil {
 		return nil, err
 	}
-	applyVolume(frame, P.volumeProvider())
+	applyVolume(frame, p.volumeProvider())
 	return frame, nil
 }
 
-func (P *pcmVolumeFrameProvider) Close() {
-	P.pcmFrameProvider.Close()
+func (p *pcmVolumeFrameProvider) Close() {
+	p.pcmFrameProvider.Close()
 }
 
-func applyVolume(in []int16, newVolume float32) {
+func applyVolume(pcm []int16, newVolume float32) {
 	if newVolume == 1 {
 		return
 	}
-	for i := range in {
+	for i := range pcm {
 		if newVolume == 0 {
-			in[i] = 0
+			pcm[i] = 0
 			continue
 		}
-		v := float32(in[i]) * newVolume
+		v := float32(pcm[i]) * newVolume
 		if v > 32767 {
 			v = 32767
 		}
 		if v < -32768 {
 			v = -32768
 		}
-		in[i] = int16(v)
+		pcm[i] = int16(v)
 	}
 }
