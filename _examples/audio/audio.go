@@ -71,12 +71,12 @@ func main() {
 func play(client bot.Client) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	connection, err := client.ConnectVoice(ctx, guildID, channelID, false, false)
+	conn, err := client.ConnectVoice(ctx, guildID, channelID, false, false)
 	if err != nil {
 		panic("error connecting to voice channel: " + err.Error())
 	}
 
-	if err = connection.WaitUntilConnected(ctx); err != nil {
+	if err = conn.WaitUntilConnected(ctx); err != nil {
 		panic("error waiting for connection: " + err.Error())
 	}
 
@@ -95,7 +95,7 @@ func play(client bot.Client) {
 		panic("error creating player: " + err.Error())
 	}
 
-	connection.SetOpusFrameProvider(player)
+	conn.SetOpusFrameProvider(player)
 
 	defer rs.Body.Close()
 	if _, err = io.Copy(writer, rs.Body); err != nil {

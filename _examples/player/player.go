@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -27,6 +28,8 @@ var (
 	guildID   = snowflake.GetEnv("disgo_guild_id")
 	channelID = snowflake.GetEnv("disgo_channel_id")
 )
+
+var player *TrackPlayer
 
 func main() {
 	log.SetLevel(log.LevelInfo)
@@ -67,23 +70,6 @@ func main() {
 	<-s
 }
 
-type player struct {
-	p        disgoplayer.Player
-	queue    []string
-	provider disgoplayer.PCMFrameProvider
-}
-
-func newPlayer(p disgoplayer.Player) *player {
-	return &player{
-		p: p,
-		queue: []string{
-			"https://p.scdn.co/mp3-preview/029f4fba66c0b2cfddfe53fc14b95fa2982e423a",
-			"https://p.scdn.co/mp3-preview/53d1fc1d65f13679db03cf7ecb7500212238d998",
-			"https://p.scdn.co/mp3-preview/b34cc4a94716e02111c1247fbf963de4ff7b859f",
-		},
-	}
-}
-
 func start(client bot.Client) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -96,19 +82,19 @@ func start(client bot.Client) {
 		panic("error waiting for connection: " + err.Error())
 	}
 
-	player, err = disgoplayer.NewPlayer(func() disgoplayer.PCMFrameProvider {
-		return mp3Provider
-	}, func(err error) {
-		if err == disgoplayer.OpusProviderClosed {
-			conn.Close()
-			return
-		}
-		if err == io.EOF {
-			playNext(client, conn)
-			return
-		}
-		return
-	})
+	player = &TrackPlayer{
+		queue: []string{
+			"https://p.scdn.co/mp3-preview/029f4fba66c0b2cfddfe53fc14b95fa2982e423a",
+			"https://p.scdn.co/mp3-preview/53d1fc1d65f13679db03cf7ecb7500212238d998",
+			"https://p.scdn.co/mp3-preview/b34cc4a94716e02111c1247fbf963de4ff7b859f",
+		},
+		conn:   conn,
+		client: client,
+	}
+
+	player.Player, err = disgoplayer.NewPlayer(func() disgoplayer.PCMFrameProvider {
+		return player.provider
+	}, player)
 	if err != nil {
 		panic("error creating player: " + err.Error())
 	}
@@ -116,13 +102,21 @@ func start(client bot.Client) {
 	conn.SetOpusFrameProvider(player)
 }
 
-func playNext(client bot.Client, conn voice.Connection) {
-	if len(queue) == 0 {
-		_ = client.DisconnectVoice(context.Background(), conn.GuildID())
+type TrackPlayer struct {
+	disgoplayer.Player
+	queue    []string
+	provider disgoplayer.PCMFrameProvider
+	conn     voice.Conn
+	client   bot.Client
+}
+
+func (p *TrackPlayer) next() {
+	if len(p.queue) == 0 {
+		_ = p.client.DisconnectVoice(context.Background(), p.conn.GuildID())
 		return
 	}
 	var track string
-	track, queue = queue[0], queue[1:]
+	track, p.queue = p.queue[0], p.queue[1:]
 
 	time.Sleep(time.Second * 2)
 
@@ -133,10 +127,35 @@ func playNext(client bot.Client, conn voice.Connection) {
 	defer rs.Body.Close()
 
 	var w io.Writer
-	mp3Provider, w, err = disgoplayer.NewMP3PCMFrameProvider(nil)
+	p.provider, w, err = disgoplayer.NewMP3PCMFrameProvider(nil)
 	if err != nil {
 		panic("error creating mp3 provider: " + err.Error())
 		return
 	}
 	_, _ = io.Copy(w, rs.Body)
+}
+
+func (p *TrackPlayer) OnPause(player disgoplayer.Player) {
+	println("paused")
+}
+
+func (p *TrackPlayer) OnResume(player disgoplayer.Player) {
+	println("resume")
+}
+
+func (p *TrackPlayer) OnStart(player disgoplayer.Player) {
+	println("start")
+}
+
+func (p *TrackPlayer) OnEnd(player disgoplayer.Player) {
+	println("end")
+	p.next()
+}
+
+func (p *TrackPlayer) OnError(player disgoplayer.Player, err error) {
+	fmt.Println("error: ", err)
+}
+
+func (p *TrackPlayer) OnClose(player disgoplayer.Player) {
+	println("close")
 }
