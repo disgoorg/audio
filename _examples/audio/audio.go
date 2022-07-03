@@ -13,7 +13,6 @@ import (
 
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
-	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/gateway"
 	"github.com/disgoorg/disgoplayer"
@@ -35,7 +34,7 @@ func main() {
 	log.Info("starting up")
 
 	client, err := disgo.New(token,
-		bot.WithGatewayConfigOpts(gateway.WithGatewayIntents(discord.GatewayIntentMessageContent|discord.GatewayIntentGuildMessages|discord.GatewayIntentGuildVoiceStates)),
+		bot.WithGatewayConfigOpts(gateway.WithIntents(gateway.IntentMessageContent|gateway.IntentGuildMessages|gateway.IntentGuildVoiceStates)),
 		bot.WithEventListenerFunc(func(e *events.Ready) {
 			go play(e.Client())
 		}),
@@ -87,15 +86,15 @@ func play(client bot.Client) {
 
 	mp3Provider, writer, err := disgoplayer.NewMP3PCMFrameProvider(nil)
 	if err != nil {
-		panic("error creating audio provider: " + err.Error())
+		panic("error creating mp3 provider: " + err.Error())
 	}
 
-	player, err = disgoplayer.NewPlayer(mp3Provider)
+	opusProvider, err := disgoplayer.NewPCMOpusProvider(nil, mp3Provider)
 	if err != nil {
-		panic("error creating player: " + err.Error())
+		panic("error creating opus provider: " + err.Error())
 	}
 
-	conn.SetOpusFrameProvider(player)
+	conn.SetOpusFrameProvider(opusProvider)
 
 	defer rs.Body.Close()
 	if _, err = io.Copy(writer, rs.Body); err != nil {

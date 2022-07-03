@@ -5,7 +5,7 @@ go 1.18
 replace github.com/disgoorg/disgoplayer => ../../
 
 require (
-	github.com/disgoorg/disgo v0.12.7-0.20220627235006-e00c6d6578ff
+	github.com/disgoorg/disgo v0.13.2-0.20220703002013-8ea1d8f4a96d
 	github.com/disgoorg/disgoplayer v0.0.0
 	github.com/disgoorg/log v1.2.0
 	github.com/disgoorg/snowflake/v2 v2.0.0
