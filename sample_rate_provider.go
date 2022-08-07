@@ -19,6 +19,7 @@ func NewPCMFrameResamplerProvider(resampler *samplerate.Resampler, inputSampleRa
 		pcmFrameProvider: pcmFrameProvider,
 		inputSampleRate:  inputSampleRate,
 		outputSampleRate: outputSampleRate,
+		newPCM:           make([]int16, opus.GetOutputBuffSize(outputSampleRate, channels)),
 	}
 }
 
@@ -27,6 +28,7 @@ type sampleRateProvider struct {
 	pcmFrameProvider PCMFrameProvider
 	inputSampleRate  int
 	outputSampleRate int
+	newPCM           []int16
 }
 
 func (p *sampleRateProvider) ProvidePCMFrame() ([]int16, error) {
@@ -35,16 +37,15 @@ func (p *sampleRateProvider) ProvidePCMFrame() ([]int16, error) {
 		return nil, err
 	}
 
-	newPCM := make([]int16, opus.GetOutputBuffSize(p.outputSampleRate, p.resampler.Channels()))
 	var (
 		inputFrames  int64
 		outputFrames int64
 	)
-	if err = p.resampler.Process(pcm, newPCM, p.inputSampleRate, p.outputSampleRate, 0, &inputFrames, &outputFrames); err != nil {
+	if err = p.resampler.Process(pcm, p.newPCM, p.inputSampleRate, p.outputSampleRate, 0, &inputFrames, &outputFrames); err != nil {
 		return nil, err
 	}
 
-	return newPCM, nil
+	return p.newPCM, nil
 }
 
 func (p *sampleRateProvider) Close() {

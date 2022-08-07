@@ -17,9 +17,6 @@ var (
 
 	ErrDecoderNotInitialized     = errors.New("audio decoder not initialized")
 	ErrDecoderAlreadyInitialized = errors.New("audio decoder already initialized")
-
-	ErrRepacketizerNotInitialized     = errors.New("audio repacketizer not initialized")
-	ErrRepacketizerAlreadyInitialized = errors.New("audio repacketizer already initialized")
 )
 
 type Application int

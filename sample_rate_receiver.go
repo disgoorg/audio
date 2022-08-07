@@ -20,6 +20,7 @@ func NewPCMFrameResamplerReceiver(resampler *samplerate.Resampler, inputSampleRa
 		pcmFrameReceiver: pcmFrameReceiver,
 		inputSampleRate:  inputSampleRate,
 		outputSampleRate: outputSampleRate,
+		newPCM:           make([]int16, opus.GetOutputBuffSize(outputSampleRate, channels)),
 	}
 }
 
@@ -28,19 +29,20 @@ type sampleRateReceiver struct {
 	pcmFrameReceiver PCMFrameReceiver
 	inputSampleRate  int
 	outputSampleRate int
+	newPCM           []int16
 }
 
 func (p *sampleRateReceiver) ReceivePCMFrame(userID snowflake.ID, packet *PCMPacket) error {
-	newPCM := make([]int16, opus.GetOutputBuffSize(p.outputSampleRate, p.resampler.Channels()))
+
 	var (
 		inputFrames  int64
 		outputFrames int64
 	)
-	if err := p.resampler.Process(packet.PCM, newPCM, p.inputSampleRate, p.outputSampleRate, 0, &inputFrames, &outputFrames); err != nil {
+	if err := p.resampler.Process(packet.PCM, p.newPCM, p.inputSampleRate, p.outputSampleRate, 0, &inputFrames, &outputFrames); err != nil {
 		return err
 	}
 
-	packet.PCM = newPCM
+	packet.PCM = p.newPCM
 	return p.pcmFrameReceiver.ReceivePCMFrame(userID, packet)
 }
 
