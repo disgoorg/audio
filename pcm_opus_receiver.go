@@ -61,7 +61,7 @@ func (r *pcmOpusReceiver) ReceiveOpusFrame(userID snowflake.ID, packet *voice.Pa
 			return fmt.Errorf("failed to create opus decoder: %w", err)
 		}
 
-		sampleRate, err := state.decoder.SampleRate()
+		sampleRate, err := decoder.SampleRate()
 		if err != nil {
 			r.decodersMu.Unlock()
 			return fmt.Errorf("failed to get sample rate: %w", err)
@@ -71,6 +71,7 @@ func (r *pcmOpusReceiver) ReceiveOpusFrame(userID snowflake.ID, packet *voice.Pa
 			decoder: decoder,
 			pcmBuff: make([]int16, opus.GetOutputBuffSize(sampleRate, decoder.Channels())),
 		}
+		state = r.decoderStates[userID]
 	}
 	r.decodersMu.Unlock()
 
