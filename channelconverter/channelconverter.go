@@ -25,8 +25,7 @@ func (c *ChannelConverter) Convert(input []int16, output []int16) error {
 			newOutput := (int32(input[i]) + int32(input[i+1])) / 2
 			if newOutput > 32767 {
 				newOutput = 32767
-			}
-			if newOutput < -32768 {
+			} else if newOutput < -32768 {
 				newOutput = -32768
 			}
 			output[i/2] = int16(newOutput)
