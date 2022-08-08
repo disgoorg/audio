@@ -3,7 +3,7 @@ module github.com/disgoorg/disgoplayer
 go 1.18
 
 require (
-	github.com/disgoorg/disgo v0.13.2-0.20220703002013-8ea1d8f4a96d
+	github.com/disgoorg/disgo v0.13.16-0.20220808211936-a95b48db867e
 	github.com/disgoorg/log v1.2.0
 	github.com/disgoorg/snowflake/v2 v2.0.0
 )
