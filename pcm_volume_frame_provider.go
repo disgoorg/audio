@@ -37,8 +37,7 @@ func applyVolume(pcm []int16, newVolume float32) {
 		v := float32(pcm[i]) * newVolume
 		if v > 32767 {
 			v = 32767
-		}
-		if v < -32768 {
+		} else if v < -32768 {
 			v = -32768
 		}
 		pcm[i] = int16(v)

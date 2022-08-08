@@ -133,8 +133,7 @@ func (r *pcmCombinerReceiver) combinePackets() error {
 			newPCM := int32(combinedPacket.PCM[j]) + int32(audio.packet.PCM[j]/int16(len(audioParts)))
 			if newPCM > 32767 {
 				newPCM = 32767
-			}
-			if newPCM < -32768 {
+			} else if newPCM < -32768 {
 				newPCM = -32768
 			}
 			combinedPacket.PCM[j] = int16(newPCM)
