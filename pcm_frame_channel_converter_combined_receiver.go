@@ -2,14 +2,15 @@ package disgoplayer
 
 import (
 	"github.com/disgoorg/disgoplayer/channelconverter"
+	"github.com/disgoorg/disgoplayer/opus"
 	"github.com/disgoorg/snowflake/v2"
 )
 
-func NewPCMFrameChannelConverterCombinedReceiver(receiver PCMCombinedFrameReceiver, inputChannels int, outputChannels int) PCMCombinedFrameReceiver {
+func NewPCMFrameChannelConverterCombinedReceiver(receiver PCMCombinedFrameReceiver, rate int, inputChannels int, outputChannels int) PCMCombinedFrameReceiver {
 	return &pcmFrameChannelConverterCombinedReceiver{
 		r:                receiver,
 		channelConverter: channelconverter.CreateChannelConverter(inputChannels, outputChannels),
-		newPCM:           make([]int16, outputChannels),
+		newPCM:           make([]int16, opus.GetOutputBuffSize(rate, outputChannels)),
 	}
 }
 

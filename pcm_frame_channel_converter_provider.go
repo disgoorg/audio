@@ -1,12 +1,15 @@
 package disgoplayer
 
-import "github.com/disgoorg/disgoplayer/channelconverter"
+import (
+	"github.com/disgoorg/disgoplayer/channelconverter"
+	"github.com/disgoorg/disgoplayer/opus"
+)
 
-func NewPCMFrameChannelConverterProvider(Provider PCMFrameProvider, inputChannels int, outputChannels int) PCMFrameProvider {
+func NewPCMFrameChannelConverterProvider(Provider PCMFrameProvider, rate int, inputChannels int, outputChannels int) PCMFrameProvider {
 	return &pcmFrameChannelConverterProvider{
 		pcmFrameProvider: Provider,
 		channelConverter: channelconverter.CreateChannelConverter(inputChannels, outputChannels),
-		newPCM:           make([]int16, outputChannels),
+		newPCM:           make([]int16, opus.GetOutputBuffSize(rate, outputChannels)),
 	}
 }
 
