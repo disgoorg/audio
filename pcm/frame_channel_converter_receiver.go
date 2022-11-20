@@ -1,12 +1,12 @@
-package disgoplayer
+package pcm
 
 import (
-	"github.com/disgoorg/disgoplayer/channelconverter"
-	"github.com/disgoorg/disgoplayer/opus"
+	"github.com/disgoorg/audio/channelconverter"
+	"github.com/disgoorg/audio/opus"
 	"github.com/disgoorg/snowflake/v2"
 )
 
-func NewPCMFrameChannelConverterReceiver(receiver PCMFrameReceiver, rate int, inputChannels int, outputChannels int) PCMFrameReceiver {
+func NewPCMFrameChannelConverterReceiver(receiver FrameReceiver, rate int, inputChannels int, outputChannels int) FrameReceiver {
 	return &pcmFrameChannelConverterReceiver{
 		r:                receiver,
 		channelConverter: channelconverter.CreateChannelConverter(inputChannels, outputChannels),
@@ -15,12 +15,12 @@ func NewPCMFrameChannelConverterReceiver(receiver PCMFrameReceiver, rate int, in
 }
 
 type pcmFrameChannelConverterReceiver struct {
-	r                PCMFrameReceiver
+	r                FrameReceiver
 	channelConverter *channelconverter.ChannelConverter
 	newPCM           []int16
 }
 
-func (p *pcmFrameChannelConverterReceiver) ReceivePCMFrame(userID snowflake.ID, packet *PCMPacket) error {
+func (p *pcmFrameChannelConverterReceiver) ReceivePCMFrame(userID snowflake.ID, packet *Packet) error {
 	if err := p.channelConverter.Convert(packet.PCM, p.newPCM); err != nil {
 		return err
 	}

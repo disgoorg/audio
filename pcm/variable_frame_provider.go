@@ -1,13 +1,13 @@
-package disgoplayer
+package pcm
 
-func NewVariablePCMFrameProvider(providerFunc func() PCMFrameProvider) PCMFrameProvider {
+func NewVariablePCMFrameProvider(providerFunc func() FrameProvider) FrameProvider {
 	return &variablePCMFrameProvider{
 		providerFunc: providerFunc,
 	}
 }
 
 type variablePCMFrameProvider struct {
-	providerFunc func() PCMFrameProvider
+	providerFunc func() FrameProvider
 }
 
 func (v *variablePCMFrameProvider) ProvidePCMFrame() ([]int16, error) {

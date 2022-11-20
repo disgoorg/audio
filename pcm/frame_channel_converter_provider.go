@@ -1,11 +1,11 @@
-package disgoplayer
+package pcm
 
 import (
-	"github.com/disgoorg/disgoplayer/channelconverter"
-	"github.com/disgoorg/disgoplayer/opus"
+	"github.com/disgoorg/audio/channelconverter"
+	"github.com/disgoorg/audio/opus"
 )
 
-func NewPCMFrameChannelConverterProvider(Provider PCMFrameProvider, rate int, inputChannels int, outputChannels int) PCMFrameProvider {
+func NewPCMFrameChannelConverterProvider(Provider FrameProvider, rate int, inputChannels int, outputChannels int) FrameProvider {
 	return &pcmFrameChannelConverterProvider{
 		pcmFrameProvider: Provider,
 		channelConverter: channelconverter.CreateChannelConverter(inputChannels, outputChannels),
@@ -14,7 +14,7 @@ func NewPCMFrameChannelConverterProvider(Provider PCMFrameProvider, rate int, in
 }
 
 type pcmFrameChannelConverterProvider struct {
-	pcmFrameProvider PCMFrameProvider
+	pcmFrameProvider FrameProvider
 	channelConverter *channelconverter.ChannelConverter
 	newPCM           []int16
 }

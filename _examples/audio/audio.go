@@ -11,11 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/disgoorg/audio"
+	"github.com/disgoorg/audio/mp3"
+	"github.com/disgoorg/audio/pcm"
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/gateway"
-	"github.com/disgoorg/disgoplayer"
 	"github.com/disgoorg/log"
 	"github.com/disgoorg/snowflake/v2"
 )
@@ -26,7 +28,7 @@ var (
 	channelID = snowflake.GetEnv("disgo_channel_id")
 )
 
-var player disgoplayer.Player
+var player audio.Player
 
 func main() {
 	log.SetLevel(log.LevelInfo)
@@ -57,7 +59,7 @@ func main() {
 
 	defer client.Close(context.TODO())
 
-	if err = client.ConnectGateway(context.TODO()); err != nil {
+	if err = client.OpenGateway(context.TODO()); err != nil {
 		log.Fatal("error connecting to gateway: ", err)
 	}
 
@@ -70,7 +72,7 @@ func main() {
 func play(client bot.Client) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	conn, err := client.ConnectVoice(ctx, guildID, channelID, false, false)
+	conn, err := client.OpenVoice(ctx, guildID, channelID, false, false)
 	if err != nil {
 		panic("error connecting to voice channel: " + err.Error())
 	}
@@ -84,12 +86,12 @@ func play(client bot.Client) {
 		panic("error getting audio: " + err.Error())
 	}
 
-	mp3Provider, writer, err := disgoplayer.NewMP3PCMFrameProvider(nil)
+	mp3Provider, writer, err := mp3.NewPCMFrameProvider(nil)
 	if err != nil {
 		panic("error creating mp3 provider: " + err.Error())
 	}
 
-	opusProvider, err := disgoplayer.NewPCMOpusProvider(nil, mp3Provider)
+	opusProvider, err := pcm.NewOpusProvider(nil, mp3Provider)
 	if err != nil {
 		panic("error creating opus provider: " + err.Error())
 	}

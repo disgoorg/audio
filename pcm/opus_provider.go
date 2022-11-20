@@ -1,16 +1,16 @@
-package disgoplayer
+package pcm
 
 import (
 	"fmt"
 	"io"
 
+	"github.com/disgoorg/audio/opus"
 	"github.com/disgoorg/disgo/voice"
-	"github.com/disgoorg/disgoplayer/opus"
 )
 
-// NewPCMOpusProvider creates a new voice.OpusFrameProvider which gets PCM frames from the given PCMFrameProvider and encodes the PCM frames into Opus frames.
+// NewOpusProvider creates a new voice.OpusFrameProvider which gets PCM frames from the given FrameProvider and encodes the PCM frames into Opus frames.
 // You can pass your own *opus.Encoder or nil to use the default Opus encoder(48000hz sample rate, 2 channels, opus.ApplicationAudio & 64kbps bitrate).
-func NewPCMOpusProvider(encoder *opus.Encoder, pcmProvider PCMFrameProvider) (voice.OpusFrameProvider, error) {
+func NewOpusProvider(encoder *opus.Encoder, pcmProvider FrameProvider) (voice.OpusFrameProvider, error) {
 	if encoder == nil {
 		var err error
 		if encoder, err = opus.NewEncoder(48000, 2, opus.ApplicationAudio); err != nil {
@@ -21,20 +21,20 @@ func NewPCMOpusProvider(encoder *opus.Encoder, pcmProvider PCMFrameProvider) (vo
 		}
 
 	}
-	return &pcmOpusProvider{
+	return &opusProvider{
 		encoder:     encoder,
 		pcmProvider: pcmProvider,
 		opusBuff:    make([]byte, 2048),
 	}, nil
 }
 
-type pcmOpusProvider struct {
+type opusProvider struct {
 	encoder     *opus.Encoder
-	pcmProvider PCMFrameProvider
+	pcmProvider FrameProvider
 	opusBuff    []byte
 }
 
-func (p *pcmOpusProvider) ProvideOpusFrame() ([]byte, error) {
+func (p *opusProvider) ProvideOpusFrame() ([]byte, error) {
 	pcm, err := p.pcmProvider.ProvidePCMFrame()
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (p *pcmOpusProvider) ProvideOpusFrame() ([]byte, error) {
 	return p.opusBuff[:n], nil
 }
 
-func (p *pcmOpusProvider) Close() {
+func (p *opusProvider) Close() {
 	p.encoder.Destroy()
 	p.pcmProvider.Close()
 }

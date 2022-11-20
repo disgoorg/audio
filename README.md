@@ -1,8 +1,8 @@
-[![Go Reference](https://pkg.go.dev/badge/github.com/disgoorg/disgoplayer.svg)](https://pkg.go.dev/github.com/disgoorg/disgoplayer)
-[![Go Report](https://goreportcard.com/badge/github.com/disgoorg/disgoplayer)](https://goreportcard.com/report/github.com/disgoorg/disgoplayer)
+[![Go Reference](https://pkg.go.dev/badge/github.com/disgoorg/audio.svg)](https://pkg.go.dev/github.com/disgoorg/audio)
+[![Go Report](https://goreportcard.com/badge/github.com/disgoorg/audio)](https://goreportcard.com/report/github.com/disgoorg/audio)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/disgoorg/disgoplayer)](https://golang.org/doc/devel/release.html)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/disgoorg/disgoplayer/blob/master/LICENSE)
-[![DisGoPlayer Version](https://img.shields.io/github/v/tag/disgoorg/disgoplayer?label=release)](https://github.com/disgoorg/disgoplayer/releases/latest)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/disgoorg/audio/blob/master/LICENSE)
+[![DisGoPlayer Version](https://img.shields.io/github/v/tag/disgoorg/disgoplayer?label=release)](https://github.com/disgoorg/audio/releases/latest)
 [![Support Discord](https://discord.com/api/guilds/817327181659111454/widget.png)](https://discord.gg/zQ4u3CdU3J)
 
 <img align="right" src="/.github/disgoplayer.png" width=192 alt="discord gopher">
@@ -18,7 +18,7 @@ This module requires [CGO](https://go.dev/blog/cgo) to be enabled.
 ### Installing
 
 ```sh
-$ go get github.com/disgoorg/disgoplayer
+$ go get github.com/disgoorg/audio
 ```
 
 ### Usage

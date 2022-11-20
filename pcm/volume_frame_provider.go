@@ -1,6 +1,6 @@
-package disgoplayer
+package pcm
 
-func NewPCMVolumeFrameProvider(pcmFrameProvider PCMFrameProvider, volumeProvider func() float32) PCMFrameProvider {
+func NewPCMVolumeFrameProvider(pcmFrameProvider FrameProvider, volumeProvider func() float32) FrameProvider {
 	return &pcmVolumeFrameProvider{
 		pcmFrameProvider: pcmFrameProvider,
 		volumeProvider:   volumeProvider,
@@ -8,7 +8,7 @@ func NewPCMVolumeFrameProvider(pcmFrameProvider PCMFrameProvider, volumeProvider
 }
 
 type pcmVolumeFrameProvider struct {
-	pcmFrameProvider PCMFrameProvider
+	pcmFrameProvider FrameProvider
 	volumeProvider   func() float32
 }
 

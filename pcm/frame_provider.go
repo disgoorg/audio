@@ -1,15 +1,15 @@
-package disgoplayer
+package pcm
 
 import (
 	"bytes"
 	"encoding/binary"
 	"io"
 
-	"github.com/disgoorg/disgoplayer/opus"
+	"github.com/disgoorg/audio/opus"
 )
 
-// PCMFrameProvider is an interface for providing PCM frames.
-type PCMFrameProvider interface {
+// FrameProvider is an interface for providing PCM frames.
+type FrameProvider interface {
 	// ProvidePCMFrame is called to get a PCM frame.
 	ProvidePCMFrame() ([]int16, error)
 
@@ -17,28 +17,28 @@ type PCMFrameProvider interface {
 	Close()
 }
 
-// NewPCMStreamProvider creates a new PCMFrameProvider which reads PCM frames from the given io.Reader.
-func NewPCMStreamProvider(r io.Reader) PCMFrameProvider {
-	return NewCustomPCMStreamProvider(r, 48000, 2)
+// NewReader creates a new FrameProvider which reads PCM frames from the given io.Reader.
+func NewReader(r io.Reader) FrameProvider {
+	return NewCustomReader(r, 48000, 2)
 }
 
-// NewCustomPCMStreamProvider creates a new PCMFrameProvider which reads PCM frames from the given io.Reader.
+// NewCustomReader creates a new FrameProvider which reads PCM frames from the given io.Reader.
 // You can specify the sample rate and number of channels.
-func NewCustomPCMStreamProvider(r io.Reader, rate int, channels int) PCMFrameProvider {
-	return &pcmStreamProvider{
+func NewCustomReader(r io.Reader, rate int, channels int) FrameProvider {
+	return &reader{
 		r:           r,
 		bytePCMBuff: make([]byte, opus.GetOutputBuffSize(rate, channels)*2),
 		pcmBuff:     make([]int16, opus.GetOutputBuffSize(rate, channels)),
 	}
 }
 
-type pcmStreamProvider struct {
+type reader struct {
 	r           io.Reader
 	bytePCMBuff []byte
 	pcmBuff     []int16
 }
 
-func (p *pcmStreamProvider) ProvidePCMFrame() ([]int16, error) {
+func (p *reader) ProvidePCMFrame() ([]int16, error) {
 	_, err := p.r.Read(p.bytePCMBuff)
 	if err != nil {
 		return nil, err
@@ -50,4 +50,4 @@ func (p *pcmStreamProvider) ProvidePCMFrame() ([]int16, error) {
 	return p.pcmBuff, nil
 }
 
-func (*pcmStreamProvider) Close() {}
+func (*reader) Close() {}

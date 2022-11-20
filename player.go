@@ -1,9 +1,10 @@
-package disgoplayer
+package audio
 
 import (
 	"io"
 	"sync"
 
+	"github.com/disgoorg/audio/pcm"
 	"github.com/disgoorg/disgo/voice"
 )
 
@@ -16,23 +17,23 @@ type Player interface {
 	SetPaused(paused bool)
 }
 
-func NewPlayer(providerFunc func() PCMFrameProvider, listeners ...Listener) (Player, error) {
+func NewPlayer(providerFunc func() pcm.FrameProvider, listeners ...Listener) (Player, error) {
 	player := &defaultPlayer{
 		listeners: listeners,
 		volume:    1,
 		paused:    false,
 	}
 
-	pauseableProvider := NewPauseablePCMFrameProvider(NewVariablePCMFrameProvider(providerFunc), func() bool {
+	pauseableProvider := pcm.NewPauseablePCMFrameProvider(pcm.NewVariablePCMFrameProvider(providerFunc), func() bool {
 		return player.paused
 	})
 
-	volumeProvider := NewPCMVolumeFrameProvider(pauseableProvider, func() float32 {
+	volumeProvider := pcm.NewPCMVolumeFrameProvider(pauseableProvider, func() float32 {
 		return player.volume
 	})
 
 	var err error
-	if player.opusFrameProvider, err = NewPCMOpusProvider(nil, volumeProvider); err != nil {
+	if player.opusFrameProvider, err = pcm.NewPCMOpusProvider(nil, volumeProvider); err != nil {
 		return nil, err
 	}
 

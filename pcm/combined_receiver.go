@@ -1,4 +1,4 @@
-package disgoplayer
+package pcm
 
 import (
 	"context"
@@ -7,14 +7,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/disgoorg/disgoplayer/opus"
+	"github.com/disgoorg/audio/opus"
 	"github.com/disgoorg/log"
 	"github.com/disgoorg/snowflake/v2"
 )
 
-// NewPCMCombinerReceiver creates a new PCMFrameReceiver which combines multiple PCMPacket(s) into a single CombinedPCMPacket.
-// You can process the CombinedPCMPacket by passing a PCMCombinedFrameReceiver.
-func NewPCMCombinerReceiver(logger log.Logger, pcmCombinedFrameReceiver PCMCombinedFrameReceiver) PCMFrameReceiver {
+// NewPCMCombinerReceiver creates a new FrameReceiver which combines multiple Packet(s) into a single CombinedPacket.
+// You can process the CombinedPacket by passing a CombinedFrameReceiver.
+func NewPCMCombinerReceiver(logger log.Logger, pcmCombinedFrameReceiver CombinedFrameReceiver) FrameReceiver {
 	if logger == nil {
 		logger = log.Default()
 	}
@@ -29,13 +29,13 @@ func NewPCMCombinerReceiver(logger log.Logger, pcmCombinedFrameReceiver PCMCombi
 
 type pcmCombinerReceiver struct {
 	logger                   log.Logger
-	pcmCombinedFrameReceiver PCMCombinedFrameReceiver
+	pcmCombinedFrameReceiver CombinedFrameReceiver
 	cancelFunc               context.CancelFunc
 	queue                    map[snowflake.ID]*[]audioData
 	queueMu                  sync.Mutex
 }
 
-func (r *pcmCombinerReceiver) ReceivePCMFrame(userID snowflake.ID, packet *PCMPacket) error {
+func (r *pcmCombinerReceiver) ReceivePCMFrame(userID snowflake.ID, packet *Packet) error {
 	r.queueMu.Lock()
 	defer r.queueMu.Unlock()
 
@@ -45,7 +45,7 @@ func (r *pcmCombinerReceiver) ReceivePCMFrame(userID snowflake.ID, packet *PCMPa
 	data := audioData{
 		time:   time.Now().UnixMilli(),
 		userID: userID,
-		packet: &PCMPacket{
+		packet: &Packet{
 			SSRC:      packet.SSRC,
 			Sequence:  packet.Sequence,
 			Timestamp: packet.Timestamp,
@@ -116,7 +116,7 @@ func (r *pcmCombinerReceiver) combinePackets() error {
 	if len(audioParts) == 0 {
 		return nil
 	}
-	combinedPacket := &CombinedPCMPacket{
+	combinedPacket := &CombinedPacket{
 		Sequences:  make([]uint16, len(audioParts)),
 		Timestamps: make([]uint32, len(audioParts)),
 		SSRCs:      make([]uint32, len(audioParts)),
@@ -157,39 +157,39 @@ func (r *pcmCombinerReceiver) Close() {
 type audioData struct {
 	time   int64
 	userID snowflake.ID
-	packet *PCMPacket
+	packet *Packet
 }
 
-// CombinedPCMPacket is a PCMPacket which got created by combining multiple PCMPacket(s).
-type CombinedPCMPacket struct {
+// CombinedPacket is a Packet which got created by combining multiple Packet(s).
+type CombinedPacket struct {
 	Sequences  []uint16
 	Timestamps []uint32
 	SSRCs      []uint32
 	PCM        []int16
 }
 
-// PCMCombinedFrameReceiver is an interface for receiving PCMPacket(s) from multiple users as one CombinedPCMPacket.
-type PCMCombinedFrameReceiver interface {
-	// ReceiveCombinedPCMFrame is called when a new CombinedPCMPacket is received.
-	ReceiveCombinedPCMFrame(userIDs []snowflake.ID, packet *CombinedPCMPacket) error
+// CombinedFrameReceiver is an interface for receiving Packet(s) from multiple users as one CombinedPacket.
+type CombinedFrameReceiver interface {
+	// ReceiveCombinedPCMFrame is called when a new CombinedPacket is received.
+	ReceiveCombinedPCMFrame(userIDs []snowflake.ID, packet *CombinedPacket) error
 
-	// Close is called when the PCMCombinedFrameReceiver is no longer needed. It should close any open resources.
+	// Close is called when the CombinedFrameReceiver is no longer needed. It should close any open resources.
 	Close()
 }
 
-// NewPCMCombinedStreamReceiver creates a new PCMCombinedFrameReceiver which writes the CombinedPCMPacket to the given io.Writer.
-func NewPCMCombinedStreamReceiver(w io.Writer) PCMCombinedFrameReceiver {
-	return &pcmCombinedStreamReceiver{
+// NewCombinedWriter creates a new CombinedFrameReceiver which writes the CombinedPacket to the given io.Writer.
+func NewCombinedWriter(w io.Writer) CombinedFrameReceiver {
+	return &combinedWriter{
 		w: w,
 	}
 }
 
-type pcmCombinedStreamReceiver struct {
+type combinedWriter struct {
 	w io.Writer
 }
 
-func (p *pcmCombinedStreamReceiver) ReceiveCombinedPCMFrame(_ []snowflake.ID, packet *CombinedPCMPacket) error {
-	return binary.Write(p.w, binary.LittleEndian, packet.PCM)
+func (r *combinedWriter) ReceiveCombinedPCMFrame(_ []snowflake.ID, packet *CombinedPacket) error {
+	return binary.Write(r.w, binary.LittleEndian, packet.PCM)
 }
 
-func (*pcmCombinedStreamReceiver) Close() {}
+func (*combinedWriter) Close() {}

@@ -1,6 +1,6 @@
-package disgoplayer
+package pcm
 
-func NewPauseablePCMFrameProvider(provider PCMFrameProvider, pauseProvider func() bool) PCMFrameProvider {
+func NewPauseablePCMFrameProvider(provider FrameProvider, pauseProvider func() bool) FrameProvider {
 	return &pauseablePCMFrameProvider{
 		provider:      provider,
 		pauseProvider: pauseProvider,
@@ -8,7 +8,7 @@ func NewPauseablePCMFrameProvider(provider PCMFrameProvider, pauseProvider func(
 }
 
 type pauseablePCMFrameProvider struct {
-	provider      PCMFrameProvider
+	provider      FrameProvider
 	pauseProvider func() bool
 }
 

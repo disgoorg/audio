@@ -12,12 +12,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/disgoorg/audio"
+	"github.com/disgoorg/audio/mp3"
+	"github.com/disgoorg/audio/pcm"
 	"github.com/disgoorg/disgo"
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/gateway"
 	"github.com/disgoorg/disgo/voice"
-	"github.com/disgoorg/disgoplayer"
 	"github.com/disgoorg/log"
 	"github.com/disgoorg/snowflake/v2"
 )
@@ -59,7 +61,7 @@ func main() {
 
 	defer client.Close(context.TODO())
 
-	if err = client.ConnectGateway(context.TODO()); err != nil {
+	if err = client.OpenGateway(context.TODO()); err != nil {
 		log.Fatal("error connecting to gateway: ", err)
 	}
 
@@ -72,7 +74,7 @@ func main() {
 func start(client bot.Client) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	conn, err := client.ConnectVoice(ctx, guildID, channelID, false, false)
+	conn, err := client.OpenVoice(ctx, guildID, channelID, false, false)
 	if err != nil {
 		panic("error connecting to voice channel: " + err.Error())
 	}
@@ -91,7 +93,7 @@ func start(client bot.Client) {
 		client: client,
 	}
 
-	player.Player, err = disgoplayer.NewPlayer(func() disgoplayer.PCMFrameProvider {
+	player.Player, err = audio.NewPlayer(func() pcm.FrameProvider {
 		return player.provider
 	}, player)
 	if err != nil {
@@ -102,16 +104,16 @@ func start(client bot.Client) {
 }
 
 type TrackPlayer struct {
-	disgoplayer.Player
+	audio.Player
 	queue    []string
-	provider disgoplayer.PCMFrameProvider
+	provider pcm.FrameProvider
 	conn     voice.Conn
 	client   bot.Client
 }
 
 func (p *TrackPlayer) next() {
 	if len(p.queue) == 0 {
-		_ = p.client.DisconnectVoice(context.Background(), p.conn.GuildID())
+		_ = p.client.CloseVoice(context.Background(), p.conn.GuildID())
 		return
 	}
 	var track string
@@ -126,7 +128,7 @@ func (p *TrackPlayer) next() {
 	defer rs.Body.Close()
 
 	var w io.Writer
-	p.provider, w, err = disgoplayer.NewMP3PCMFrameProvider(nil)
+	p.provider, w, err = mp3.NewPCMFrameProvider(nil)
 	if err != nil {
 		panic("error creating mp3 provider: " + err.Error())
 		return
@@ -134,27 +136,27 @@ func (p *TrackPlayer) next() {
 	_, _ = io.Copy(w, rs.Body)
 }
 
-func (p *TrackPlayer) OnPause(player disgoplayer.Player) {
+func (p *TrackPlayer) OnPause(player audio.Player) {
 	println("paused")
 }
 
-func (p *TrackPlayer) OnResume(player disgoplayer.Player) {
+func (p *TrackPlayer) OnResume(player audio.Player) {
 	println("resume")
 }
 
-func (p *TrackPlayer) OnStart(player disgoplayer.Player) {
+func (p *TrackPlayer) OnStart(player audio.Player) {
 	println("start")
 }
 
-func (p *TrackPlayer) OnEnd(player disgoplayer.Player) {
+func (p *TrackPlayer) OnEnd(player audio.Player) {
 	println("end")
 	p.next()
 }
 
-func (p *TrackPlayer) OnError(player disgoplayer.Player, err error) {
+func (p *TrackPlayer) OnError(player audio.Player, err error) {
 	fmt.Println("error: ", err)
 }
 
-func (p *TrackPlayer) OnClose(player disgoplayer.Player) {
+func (p *TrackPlayer) OnClose(player audio.Player) {
 	println("close")
 }
