@@ -72,15 +72,12 @@ func main() {
 }
 
 func start(client bot.Client) {
+	conn := client.VoiceManager().CreateConn(guildID)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	conn, err := client.OpenVoice(ctx, guildID, channelID, false, false)
-	if err != nil {
+	if err := conn.Open(ctx, channelID, false, false); err != nil {
 		panic("error connecting to voice channel: " + err.Error())
-	}
-
-	if err = conn.WaitUntilConnected(ctx); err != nil {
-		panic("error waiting for connection: " + err.Error())
 	}
 
 	player = &TrackPlayer{
@@ -93,6 +90,7 @@ func start(client bot.Client) {
 		client: client,
 	}
 
+	var err error
 	player.Player, err = audio.NewPlayer(func() pcm.FrameProvider {
 		return player.provider
 	}, player)
@@ -113,7 +111,7 @@ type TrackPlayer struct {
 
 func (p *TrackPlayer) next() {
 	if len(p.queue) == 0 {
-		_ = p.client.CloseVoice(context.Background(), p.conn.GuildID())
+		p.conn.Close(context.Background())
 		return
 	}
 	var track string

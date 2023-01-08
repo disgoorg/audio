@@ -70,15 +70,12 @@ func main() {
 }
 
 func play(client bot.Client) {
+	conn := client.VoiceManager().CreateConn(guildID)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	conn, err := client.OpenVoice(ctx, guildID, channelID, false, false)
-	if err != nil {
+	if err := conn.Open(ctx, channelID, false, false); err != nil {
 		panic("error connecting to voice channel: " + err.Error())
-	}
-
-	if err = conn.WaitUntilConnected(ctx); err != nil {
-		panic("error waiting for connection: " + err.Error())
 	}
 
 	rs, err := http.Get("https://p.scdn.co/mp3-preview/029f4fba66c0b2cfddfe53fc14b95fa2982e423a")
@@ -91,7 +88,9 @@ func play(client bot.Client) {
 		panic("error creating mp3 provider: " + err.Error())
 	}
 
-	opusProvider, err := pcm.NewOpusProvider(nil, mp3Provider)
+	buffer := pcm.NewBufferPCMProvider(mp3Provider)
+
+	opusProvider, err := pcm.NewOpusProvider(nil, buffer)
 	if err != nil {
 		panic("error creating opus provider: " + err.Error())
 	}

@@ -33,7 +33,7 @@ func NewPlayer(providerFunc func() pcm.FrameProvider, listeners ...Listener) (Pl
 	})
 
 	var err error
-	if player.opusFrameProvider, err = pcm.NewPCMOpusProvider(nil, volumeProvider); err != nil {
+	if player.opusFrameProvider, err = pcm.NewOpusProvider(nil, volumeProvider); err != nil {
 		return nil, err
 	}
 
